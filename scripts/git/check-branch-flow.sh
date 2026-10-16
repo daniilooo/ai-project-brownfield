@@ -4,7 +4,7 @@
 #   check-branch-flow.sh <branch-de-origem> <branch-de-destino>
 #
 # Regras:
-#   main    ← somente develop
+#   main    ← develop (promoção) ou hotfix/* (correção urgente)
 #   develop ← feature/*, fix/*, bugfix/*, hotfix/*, docs/*, chore/*, refactor/*,
 #             test/*, ci/*, build/*, perf/*, style/*, revert/*, dependabot/*
 #   outras  ← livre (branches de trabalho podem receber PRs entre si)
@@ -22,7 +22,8 @@ deny() { echo "✖ PR $SRC → $DST não permitido: $1" >&2; echo "  Ver CONTRIB
 
 case "$DST" in
   main)
-    [ "$SRC" = "develop" ] || deny "main só recebe merge de develop"
+    printf '%s' "$SRC" | grep -Eq '^(develop|hotfix/[A-Za-z0-9._/-]+)$' \
+      || deny "main só recebe merge de develop ou de hotfix/*"
     ;;
   develop)
     printf '%s' "$SRC" | grep -Eq "^($WORK_PREFIXES)/[A-Za-z0-9._/-]+$" \

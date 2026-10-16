@@ -9,6 +9,6 @@
 ## Checklist
 
 - [ ] Título do PR no padrão Conventional Commits (ex.: `feat(skill): ...`)
-- [ ] Branch de origem segue o GitFlow (`feature/*`, `fix/*`, ... → `develop`; `develop` → `main`)
+- [ ] Branch de origem segue o GitFlow (`feature/*`, `fix/*`, ... → `develop`; `develop` ou `hotfix/*` → `main`)
 - [ ] `tests/run.sh` passa localmente
 - [ ] Documentação atualizada (README, `docs/`, `CHANGELOG.md` quando aplicável)
