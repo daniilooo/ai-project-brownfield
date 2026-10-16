@@ -1,0 +1,41 @@
+name: PR rules
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  branch-flow:
+    name: branch-flow
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GitFlow (main ← develop ← branches de trabalho)
+        env:
+          SRC: ${{ github.head_ref }}
+          DST: ${{ github.base_ref }}
+        run: scripts/git/check-branch-flow.sh "$SRC" "$DST"
+
+  conventional-commits:
+    name: conventional-commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Título do PR
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          SRC: ${{ github.head_ref }}
+        run: |
+          # PR develop → main é uma promoção; o título é livre (ex.: "release: v0.2.0" é recomendado).
+          if [ "$SRC" = "develop" ]; then echo "Promoção develop → main: título não validado"; exit 0; fi
+          scripts/git/check-commit-msg.sh -m "$TITLE"
+      - name: Commits do PR
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: scripts/git/check-commits.sh "$BASE_SHA" "$HEAD_SHA"
