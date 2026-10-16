@@ -254,11 +254,11 @@ for m in "update stuff" "feat: ends with dot." "Feat: capitalized type" "feat(Sk
   "$GIT_TOOLS/check-commit-msg.sh" -m "$m" 2>/dev/null && ko "deveria rejeitar: ${m:0:40}" || ok "commit inválido rejeitado: ${m:0:40}"
 done
 
-for pair in "develop main" "feature/x develop" "fix/y develop" "docs/readme develop" "hotfix/1.0.1 develop" "feature/a feature/b"; do
+for pair in "develop main" "hotfix/1.0.1 main" "feature/x develop" "fix/y develop" "docs/readme develop" "hotfix/1.0.1 develop" "feature/a feature/b"; do
   # shellcheck disable=SC2086
   "$GIT_TOOLS/check-branch-flow.sh" $pair >/dev/null 2>&1 && ok "fluxo permitido: ${pair/ / → }" || ko "deveria permitir: $pair"
 done
-for pair in "feature/x main" "hotfix/x main" "release main" "main develop" "claude/x develop" "feature develop"; do
+for pair in "feature/x main" "fix/x main" "hotfix main" "release main" "main develop" "claude/x develop" "feature develop"; do
   # shellcheck disable=SC2086
   "$GIT_TOOLS/check-branch-flow.sh" $pair >/dev/null 2>&1 && ko "deveria bloquear: $pair" || ok "fluxo bloqueado: ${pair/ / → }"
 done
