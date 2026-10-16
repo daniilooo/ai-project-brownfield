@@ -241,6 +241,53 @@ for vendor in Claude Codex; do
   grep -rqi "^#.*$vendor" "$EX/vault" && ko "Vault contém seção específica de $vendor (deve ser neutro)"
 done; ok "Vault sem seções específicas de fornecedor"
 
+# =========================================================================== F
+section "F. Ferramentas do repositório (GitFlow e Conventional Commits)"
+
+GIT_TOOLS="$ROOT/scripts/git"
+for m in "feat(skill): add discovery waves" "fix!: change exit codes" "docs: update readme" \
+         "ci(actions): run on macos" "Merge pull request #2 from daniilooo/develop" 'Revert "feat: x"'; do
+  "$GIT_TOOLS/check-commit-msg.sh" -m "$m" 2>/dev/null && ok "commit válido: $m" || ko "deveria aceitar: $m"
+done
+for m in "update stuff" "feat: ends with dot." "Feat: capitalized type" "feat(Skill): uppercase scope" \
+         "feat:missing space" "feat: $(printf 'x%.0s' $(seq 1 100))" "$(printf 'feat: x\nbody without blank line')"; do
+  "$GIT_TOOLS/check-commit-msg.sh" -m "$m" 2>/dev/null && ko "deveria rejeitar: ${m:0:40}" || ok "commit inválido rejeitado: ${m:0:40}"
+done
+
+for pair in "develop main" "hotfix/1.0.1 main" "feature/x develop" "fix/y develop" "docs/readme develop" "hotfix/1.0.1 develop" "feature/a feature/b"; do
+  # shellcheck disable=SC2086
+  "$GIT_TOOLS/check-branch-flow.sh" $pair >/dev/null 2>&1 && ok "fluxo permitido: ${pair/ / → }" || ko "deveria permitir: $pair"
+done
+for pair in "feature/x main" "fix/x main" "hotfix main" "release main" "main develop" "claude/x develop" "feature develop"; do
+  # shellcheck disable=SC2086
+  "$GIT_TOOLS/check-branch-flow.sh" $pair >/dev/null 2>&1 && ko "deveria bloquear: $pair" || ok "fluxo bloqueado: ${pair/ / → }"
+done
+
+G="$TMP/gitflow"; mkdir -p "$G"
+(
+  cd "$G" && git init -q && git config core.hooksPath "$ROOT/.githooks"
+  echo a > a && git add a
+  git commit -q -m "chore: init" 2>/dev/null && echo "main-commit-ok" || echo "main-commit-blocked"
+  git switch -q -c feature/x 2>/dev/null || git checkout -q -b feature/x
+  git commit -q -m "chore: init" 2>/dev/null && echo "feature-commit-ok"
+  echo b > b && git add b
+  git commit -q -m "bad message" 2>/dev/null && echo "bad-msg-ok" || echo "bad-msg-blocked"
+  git commit -q -m "feat: add b" 2>/dev/null && echo "good-msg-ok"
+  git rev-list --count HEAD
+) > "$TMP/hooks.out" 2>&1
+grep -q main-commit-blocked "$TMP/hooks.out" && ok "hook pre-commit bloqueia commit em main" || ko "commit em main não bloqueado"
+grep -q feature-commit-ok "$TMP/hooks.out" && ok "hook pre-commit permite branch de trabalho" || ko "commit em feature bloqueado"
+grep -q bad-msg-blocked "$TMP/hooks.out" && grep -q good-msg-ok "$TMP/hooks.out" \
+  && ok "hook commit-msg valida Conventional Commits" || ko "hook commit-msg não funcionou"
+(cd "$G" && "$GIT_TOOLS/check-commits.sh" "$(git rev-list --max-parents=0 HEAD)" HEAD) > "$TMP/cc.out" 2>&1 \
+  && ok "check-commits.sh aprova intervalo válido" || { ko "check-commits.sh reprovou intervalo válido"; cat "$TMP/cc.out"; }
+
+for f in "$ROOT"/.github/rulesets/*.json; do
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -m json.tool "$f" >/dev/null && ok "ruleset JSON válido: $(basename "$f")" || ko "ruleset inválido: $f"
+  fi
+done
+
 # =========================================================================== resumo
 echo
 echo "RESULTADO: $PASS ok, $FAIL falha(s)"

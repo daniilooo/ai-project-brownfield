@@ -224,6 +224,22 @@ Valida a estrutura da skill e os scripts em projetos de exemplo (projeto simples
 
 Mais detalhes em `docs/REFERENCE_ANALYSIS.md`, `docs/DESIGN.md` e `docs/TESTING.md`.
 
+## Contribuindo
+
+O repositório segue um GitFlow simples e protegido:
+
+```text
+feature/* · fix/* · docs/* · chore/* ...  ──PR──▶  develop  ──PR──▶  main
+hotfix/* (correção urgente)  ───────────────────────────PR──▶  main  (e PR de volta para develop)
+```
+
+- `main` só recebe merge de `develop` ou de `hotfix/*` (correção urgente); `develop` só recebe merge de branches de trabalho.
+- Commit direto em `main` e `develop` é bloqueado (rulesets do GitHub e hook local).
+- Commits e títulos de PR seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/v1.0.0/) (`feat(skill): ...`, `fix(scripts): ...`, `docs: ...`).
+- O CI roda shellcheck, os testes em Linux e macOS e valida fluxo de branches e mensagens de commit em todo PR.
+
+Ative os hooks locais com `scripts/git/install-hooks.sh`. Detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Licença
 
 MIT — ver `LICENSE`.

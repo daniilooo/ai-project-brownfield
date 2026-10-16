@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Bloqueia commits diretos nas branches protegidas. Use uma branch de trabalho
+# (feature/*, fix/*, docs/*, ...) e abra um Pull Request. Ver CONTRIBUTING.md.
+branch="$(git symbolic-ref --short -q HEAD || true)"
+case "$branch" in
+  main|develop)
+    echo "✖ Commit direto em '$branch' não é permitido." >&2
+    echo "  Crie uma branch de trabalho: git switch -c feature/<descricao>" >&2
+    exit 1 ;;
+esac
+exit 0
