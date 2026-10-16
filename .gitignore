@@ -1,0 +1,9 @@
+# SO / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Saídas temporárias de testes
+tests/.tmp/
