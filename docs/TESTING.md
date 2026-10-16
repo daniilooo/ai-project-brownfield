@@ -17,6 +17,9 @@ Requisitos: bash, git ≥ 2.31. Sem rede. `shellcheck` é usado se estiver insta
 | C | `check-scope.sh`: suporte OK; código, commit fora do escopo, segredo, pipeline e remoção de arquivo de produto → FAIL |
 | D | `validate-vault.sh`: exemplo OK; templates crus, segredo, estado longo, múltiplas ações, núcleo ausente, arquivo só-template, handoff incompleto → FAIL |
 | E | adapters multi-LLM e handoff do exemplo |
+| F | Conventional Commits, fluxo de branches, hooks locais e rulesets |
+
+No GitHub, o workflow `CI` roda shellcheck e `tests/run.sh` em Linux e macOS a cada PR e push em `main`/`develop`.
 
 ## Avaliação de comportamento (LLM)
 
