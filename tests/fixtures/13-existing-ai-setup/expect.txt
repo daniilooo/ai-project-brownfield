@@ -1,0 +1,4 @@
++ `AGENTS.md`
++ `CLAUDE.md`
++ `vault/ (diretório)`
++ `.ai/ (diretório)`

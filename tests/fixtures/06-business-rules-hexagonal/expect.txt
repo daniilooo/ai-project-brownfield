@@ -1,0 +1,6 @@
++ **FastAPI**
++ **ORM/JPA/Hibernate**
++ `alembic/ (1 arquivos)`
++ Arquivos de teste (heurística): 1
++ **Ruff/Black/isort (pyproject)**
++ `.py (

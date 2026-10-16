@@ -1,0 +1,10 @@
++ Branch atual: `develop`
++ `feature/* (1)`
++ `release/* (1)`
++ `hotfix/* (1)`
++ `develop (1)`
++ `main (1)`
++ Tags: 2
++ `v1.1.0`
++ Merge commits nos últimos 100: 1
++ **Flask**
