@@ -7,11 +7,14 @@ feature/*  fix/*  docs/*  chore/*  ...
         │  Pull Request (squash ou merge)
         ▼
      develop ──── Pull Request (merge commit) ────▶ main
+                                                      ▲
+     hotfix/* ── Pull Request (correção urgente) ──────┘
+         └────── Pull Request (sincronização) ────▶ develop
 ```
 
 | Branch | Recebe merge de | Commit direto |
 |---|---|---|
-| `main` | **somente** `develop`, via Pull Request | bloqueado |
+| `main` | **somente** `develop` (promoção) ou `hotfix/*` (correção urgente), via Pull Request | bloqueado |
 | `develop` | **somente** branches de trabalho, via Pull Request | bloqueado |
 | branches de trabalho | livre | permitido |
 
@@ -21,7 +24,21 @@ Prefixos de branch de trabalho aceitos em `develop`:
 
 Exemplo: `feature/discovery-waves`, `fix/check-scope-deleted-files`, `docs/readme-install`.
 
-Correções urgentes também passam por `develop` (`hotfix/*` → `develop` → `main`).
+### Correção urgente (hotfix)
+
+Uma correção urgente pode ir direto para `main`, sem esperar a próxima promoção de `develop`:
+
+```bash
+git switch main && git pull
+git switch -c hotfix/descricao-curta
+# ... correção + teste ...
+git commit -m "fix(scripts): descrição da correção"
+git push -u origin hotfix/descricao-curta
+# 1. abrir PR hotfix/descricao-curta → main   (merge commit)
+# 2. após o merge, abrir PR hotfix/descricao-curta → develop   (sincroniza develop)
+```
+
+O passo 2 é obrigatório: sem ele a correção some na próxima promoção `develop → main`.
 
 ### Como as regras são aplicadas
 

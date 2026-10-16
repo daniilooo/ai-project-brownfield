@@ -4,6 +4,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ## [Unreleased]
 
+### Changed
+- GitFlow: `hotfix/*` pode abrir PR direto para `main` (correção urgente), com sincronização obrigatória de volta para `develop`.
+
 ### Added
 - CI no GitHub Actions: shellcheck e testes em Linux e macOS (`ci.yml`); validação de GitFlow e Conventional Commits em PRs (`pr-rules.yml`).
 - Rulesets versionados para `main` e `develop` (`.github/rulesets/`) e `scripts/github/apply-rulesets.sh`.
