@@ -1,0 +1,6 @@
++ Raízes analisadas: 2 — TOPOLOGY: possível MULTIREPO (preservar)
++ ## Repo: `api`
++ ## Repo: `web`
++ **Express**
++ **React**
++ **PostgreSQL**

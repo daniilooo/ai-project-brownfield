@@ -1,0 +1,4 @@
+{
+  "checkout.new-flow": { "default": false, "critical": true },
+  "checkout.coupon-v2": { "default": true }
+}

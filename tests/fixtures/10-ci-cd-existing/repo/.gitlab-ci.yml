@@ -1,0 +1,15 @@
+stages: [lint, test, build, deploy]
+lint:
+  stage: lint
+  script: ["make lint"]
+test:
+  stage: test
+  script: ["make test"]
+build:
+  stage: build
+  script: ["docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA ."]
+deploy_staging:
+  stage: deploy
+  environment: staging
+  script: ["kubectl apply -f k8s/"]
+  only: [develop]

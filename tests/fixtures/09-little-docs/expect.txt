@@ -1,0 +1,5 @@
++ README: NÃO ENCONTRADO
++ **Gin**
++ `.go (2)`
++ Arquivos de teste (heurística): 0
++ Arquivos de documentação: 0

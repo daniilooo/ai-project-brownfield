@@ -1,0 +1,5 @@
++ `.gitlab-ci.yml`
++ `Jenkinsfile`
++ `Dockerfile`
++ **Kubernetes manifests**
++ `pipeline: staging (1)`

@@ -1,0 +1,9 @@
++ Branch atual: `main`
++ **Spring Boot**
++ **PostgreSQL**
++ **ORM/JPA/Hibernate**
++ `.java (3)`
++ Arquivos de teste (heurística): 1
++ README: README.md
++ PRODUCTION_SAFETY_MODE: NO_SIGNALS
+- POSSÍVEL MULTIREPO

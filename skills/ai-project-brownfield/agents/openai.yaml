@@ -1,0 +1,5 @@
+# ai-project-brownfield — metadados de interface para o Codex
+interface:
+  display_name: "AI Project Brownfield"
+  short_description: "Prepara projetos existentes para desenvolvimento AI-native"
+  default_prompt: "Use $ai-project-brownfield para analisar este projeto existente e preparar sua base AI-native. Descubra antes de perguntar e não altere código de produto."
