@@ -1,138 +1,105 @@
 # ai-project-brownfield
 
-Skill AI-native para **projetos de software que já existem**. Ela descobre como o projeto
-realmente funciona, consolida esse conhecimento em um Vault versionado e prepara o
-repositório para ser continuado por qualquer LLM — Claude Code, Codex ou outras — com
-segurança e sem alterar código de produto.
+Skill para preparar projetos de software **já existentes** para desenvolvimento AI-native, com descoberta baseada em evidências, base de conhecimento em Obsidian, workflow multi-LLM, agentes, gates humanos, GitFlow existente preservado e foco em continuar entregando com segurança.
+
+## Qual problema resolve?
+
+Projetos existentes carregam anos de código, regras de negócio espalhadas, documentação incompleta, decisões presas em conversas, pipelines, ambientes, dívida técnica e, muitas vezes, produção ativa. Quando uma LLM entra nesse projeto, ela costuma perguntar o que poderia descobrir sozinha, contradizer decisões já tomadas, sugerir arquitetura incompatível, aplicar padrões de projeto novo, recriar documentação e perder contexto ao trocar de modelo.
+
+## Como resolve?
+
+A skill segue o princípio **DISCOVER BEFORE ASKING**: antes de perguntar, inspeciona. Ela faz um inventário somente leitura do repositório, descobre stack, arquitetura, regras de negócio, testes, CI/CD, ambientes, sinais de produção e GitFlow, e registra cada descoberta com fonte e grau de confiança (`CONFIRMED`, `INFERRED`, `CONFLICTING`, `UNKNOWN`).
+
+Depois consolida esse conhecimento em um Vault versionado no próprio projeto, compara o que existe com o que está documentado, testado e operado (gap analysis), alinha o workflow e o roadmap existentes e prepara adapters finos para diferentes LLMs. O engenheiro só é consultado sobre o que o projeto não consegue responder sozinho — em um único checkpoint, com no máximo sete perguntas.
 
 ```text
-EXISTING PROJECT → DISCOVERY → CONSOLIDATION → GAP ANALYSIS
-                 → WORKFLOW ALIGNMENT → ROADMAP ALIGNMENT → CONTINUATION READY
+PROJETO EXISTENTE → DISCOVERY → CONSOLIDAÇÃO → GAP ANALYSIS
+                  → ALINHAMENTO DO WORKFLOW → ALINHAMENTO DO ROADMAP → PRONTO PARA CONTINUAR
 ```
 
-## O problema
+Durante todo o processo a skill **não altera código de produto**: backend, frontend, migrations, APIs, infraestrutura, pipelines, feature flags, segredos e dados ficam intocados. Se detectar sinais de produção, ativa automaticamente o `PRODUCTION_SAFETY_MODE` (sem deploy, migration, mutação de dados, mudança de flag ou de infraestrutura).
 
-Projetos existentes têm anos de código, regras de negócio espalhadas, documentação
-incompleta, decisões presas em chats, pipelines, ambientes, GitFlow próprio, dívida técnica
-e, muitas vezes, produção ativa. Quando uma LLM entra nesse projeto ela costuma:
+O Obsidian é a interface para navegar pelo conhecimento. Os arquivos Markdown continuam acessíveis pelo terminal, Git e outras ferramentas.
 
-- perguntar o que poderia descobrir sozinha;
-- contradizer decisões existentes e sugerir arquitetura incompatível;
-- aplicar padrões de projeto novo (monorepo, GitFlow “ideal”, reescritas);
-- recriar documentação que já existe;
-- perder contexto ao trocar de modelo e gerar handoffs gigantes;
-- criar processos mais burocráticos que o problema.
+## O que entrega?
 
-## A solução
+- Inventário do projeto em `.ai/discovery/INVENTORY.md`.
+- Vault Obsidian com mapa do projeto, regras de negócio classificadas, arquitetura atual, GitFlow existente, estratégia de testes, gaps, dívida técnica, riscos e decisões em aberto.
+- `CURRENT_STATE.md` curto, para uma nova LLM entender o projeto em poucos minutos.
+- `NEXT_ACTION.md` com **uma** próxima ação, critérios de aceite, risco e gates.
+- Workflow `PLAN → BUILD → VERIFY → SHIP` com modelo de risco (`LOW`, `MEDIUM`, `HIGH`) e três gates humanos.
+- Roadmap existente preservado e reconciliado em `vault/11_ROADMAP/DEVELOPMENT_PLAN.md`.
+- `AGENTS.md` como entrada neutra e `CLAUDE.md` importando-o, sem regras duplicadas.
+- Agentes e contratos de comunicação apenas quando fizerem sentido para o projeto.
+- Handoff curto em `.ai/HANDOFF.md` para trocar de Claude para Codex (e vice-versa) sem perder contexto.
 
-A skill segue um princípio: **DISCOVER BEFORE ASKING**.
+Documentação já existente no projeto é referenciada, não recriada. Arquivos do Vault só são criados quando há conteúdo real.
 
-1. **Inventário somente leitura** (`discover.sh`): stack, banco, mensageria, auth, testes,
-   CI/CD, infra, ambientes, sinais de produção, feature flags, GitFlow, tags, instruções de
-   IA existentes, dívida e hotspots de mudança.
-2. **Discovery com evidência**: toda afirmação relevante tem `SOURCE`, `EVIDENCE` e
-   `CONFIDENCE` (`CONFIRMED`, `INFERRED`, `CONFLICTING`, `UNKNOWN`).
-3. **Regras de negócio** extraídas de docs, testes, domínio, validators, enums, migrations,
-   contratos e códigos de erro — classificadas e marcadas como invariante, segurança ou
-   financeiro.
-4. **Arquitetura como ela é**, sem substituí-la por outra mais elegante.
-5. **Gap analysis** (existe × implementado × documentado × testado × operado).
-6. **DISCOVERY BRIEF**: uma página com achados e no máximo 7 perguntas realmente bloqueantes.
-7. **Vault** consolidado, `CURRENT_STATE` curto, uma única `NEXT_ACTION`.
-8. **Workflow** PLAN → BUILD → VERIFY → SHIP com risk model e 3 gates humanos.
-9. **Roadmap** existente preservado e reconciliado.
-10. **Adapters multi-LLM** finos e handoff curto.
-11. **Verificação automática**: nenhum arquivo de produto alterado e Vault válido.
+Ao concluir, a skill apresenta o relatório `CONTINUATION READY` e aguarda o engenheiro iniciar a próxima ação.
 
-Ao final, a skill para em `CONTINUATION READY`. Ela **não implementa features**.
+## Conteúdo e compatibilidade
 
-## Quando usar
+O arquivo `skills/ai-project-brownfield/SKILL.md` contém o fluxo principal. Os detalhes de cada fase ficam em `references/` e são lidos apenas quando necessários, para economizar contexto. A pasta da skill também traz `agents/` (papéis e contratos), `templates/` (Vault, adapters e handoff), `scripts/` (inventário e verificações) e `examples/` (um projeto fictício após o bootstrap).
 
-- Assumir, retomar ou herdar um projeto existente.
-- Preparar um repositório legado para trabalhar com agentes de IA.
-- Consolidar decisões e regras espalhadas em chats, wikis e cabeças.
-- Padronizar a troca entre LLMs em um projeto em andamento.
-- Antes de uma mudança de alto risco em um sistema pouco documentado.
+| Script | Função |
+|---|---|
+| `discover.sh` | inventário somente leitura de um ou mais repositórios; nunca imprime valores de configuração |
+| `check-scope.sh` | confirma que só material de suporte foi alterado (nenhum código de produto) |
+| `validate-vault.sh` | confirma que o Vault está completo, curto e sem segredos |
 
-## Quando NÃO usar
+A mesma pasta é utilizada no Claude Code e no Codex. A skill fornece instruções; suporte a subagentes, seleção de modelos, MCPs e execução entre fornecedores depende das capacidades e permissões reais do ambiente. Instalar esta skill não instala as LLMs nem conecta contas.
 
-- Projeto novo a partir de uma ideia (use uma skill de bootstrap greenfield).
-- Para implementar uma feature — a skill prepara a base; a implementação vem depois, pelo
-  workflow gerado.
-- Para migrar arquitetura, trocar GitFlow ou converter multirepo em monorepo — a skill
-  preserva o que existe e só **recomenda** mudanças.
-- Quando não há permissão de escrita nem para arquivos de documentação (rode apenas o
-  `discover.sh` para um inventário).
-
-## Conteúdo
-
-```text
-ai-project-brownfield/
-├── README.md
-├── LICENSE
-├── CHANGELOG.md
-├── skills/ai-project-brownfield/      ← a skill (pasta a instalar)
-│   ├── SKILL.md                       núcleo enxuto (fases, regras, formatos)
-│   ├── references/                    guias lidos sob demanda, por fase
-│   ├── agents/                        papéis, contratos e openai.yaml (Codex)
-│   ├── templates/                     Vault, AGENTS.md, CLAUDE.md, handoff, status
-│   ├── scripts/                       discover.sh, check-scope.sh, validate-vault.sh
-│   └── examples/                      projeto fictício após o bootstrap
-├── tests/
-│   ├── run.sh                         testes automatizados
-│   ├── fixtures/                      projetos fake (11)
-│   └── scenarios/                     15 cenários de avaliação da LLM
-└── docs/                              análise da referência, design, testes, eval log
-```
-
-A skill é independente: não depende de nenhuma outra skill em runtime.
+A skill é independente e não depende de nenhuma outra skill para funcionar. Depois do bootstrap, o projeto também não depende dela: o workflow fica documentado no próprio Vault.
 
 ## Pré-requisitos
 
 - Git.
-- Claude Code e/ou Codex instalados e autenticados (ou outra LLM com acesso ao terminal).
-- `bash` (Linux, macOS, WSL ou Git Bash no Windows) para os scripts.
-- Obsidian é opcional, para navegar o Vault visualmente.
+- Claude Code e/ou Codex instalados e autenticados.
+- `bash` para os scripts (Linux, macOS, WSL ou Git Bash no Windows). Sem bash, a LLM faz o inventário e as verificações manualmente.
+- Acesso de escrita ao projeto que receberá o bootstrap (apenas para arquivos de documentação e suporte).
+- Obsidian para navegar visualmente pelo Vault gerado, quando desejado.
 
-## Instalação
-
-Clone o repositório:
+## Baixar o repositório
 
 ```bash
 git clone https://github.com/daniilooo/ai-project-brownfield.git
 cd ai-project-brownfield
 ```
 
-Copie a **pasta inteira** da skill.
+Os comandos de instalação abaixo partem da raiz deste repositório. Copie a **pasta inteira** da skill.
 
-### Claude Code — todos os projetos
+## Instalação no Linux ou macOS
+
+### Claude Code — todos os projetos da máquina
 
 ```bash
 mkdir -p "$HOME/.claude/skills"
 cp -R skills/ai-project-brownfield "$HOME/.claude/skills/"
 ```
 
-### Codex — todos os projetos
+### Codex — todos os projetos da máquina
 
 ```bash
 mkdir -p "$HOME/.agents/skills"
 cp -R skills/ai-project-brownfield "$HOME/.agents/skills/"
 ```
 
-### Somente em um projeto
+### Instalação somente em um projeto
+
+Substitua o caminho pelo projeto que receberá a skill:
 
 ```bash
-projeto="/caminho/do/projeto"
-mkdir -p "$projeto/.claude/skills" "$projeto/.agents/skills"
-cp -R skills/ai-project-brownfield "$projeto/.claude/skills/"
-cp -R skills/ai-project-brownfield "$projeto/.agents/skills/"
+projeto_destino="/caminho/do/seu/projeto"
+mkdir -p "$projeto_destino/.claude/skills" "$projeto_destino/.agents/skills"
+cp -R skills/ai-project-brownfield "$projeto_destino/.claude/skills/"
+cp -R skills/ai-project-brownfield "$projeto_destino/.agents/skills/"
 ```
 
-> Instalar por projeto adiciona `.claude/skills/` e `.agents/skills/` ao repositório alvo —
-> ambos estão na allowlist do bootstrap. Se o time não quiser versioná-los, prefira a
-> instalação pessoal. Evite duas cópias com o mesmo nome no mesmo ambiente.
+Escolha instalação pessoal ou por projeto conforme sua necessidade. Evite instalar duas cópias com o mesmo nome no mesmo ambiente. A instalação por projeto adiciona arquivos ao repositório do projeto; se o time não quiser versioná-los, prefira a instalação pessoal.
 
-### Windows — PowerShell
+## Instalação no Windows — PowerShell
+
+### Instalação pessoal
 
 ```powershell
 New-Item -ItemType Directory -Force -Path "$HOME/.claude/skills", "$HOME/.agents/skills" | Out-Null
@@ -140,181 +107,104 @@ Copy-Item -Recurse -Path "./skills/ai-project-brownfield" -Destination "$HOME/.c
 Copy-Item -Recurse -Path "./skills/ai-project-brownfield" -Destination "$HOME/.agents/skills/"
 ```
 
-Os scripts exigem `bash` (Git Bash ou WSL). Sem bash, a skill continua funcionando; a LLM
-faz o inventário e as verificações manualmente, com o mesmo checklist.
+Você pode executar apenas a cópia correspondente à ferramenta que utiliza.
 
-### Atualizar e desinstalar
+### Instalação somente em um projeto
 
-`git pull --ff-only` neste repositório e copie a pasta novamente. Para desinstalar, remova
-apenas a pasta `ai-project-brownfield` instalada — os artefatos gerados nos projetos permanecem.
+```powershell
+$projetoDestino = "C:/Projetos/meu-projeto"
+New-Item -ItemType Directory -Force -Path "$projetoDestino/.claude/skills", "$projetoDestino/.agents/skills" | Out-Null
+Copy-Item -Recurse -Path "./skills/ai-project-brownfield" -Destination "$projetoDestino/.claude/skills/"
+Copy-Item -Recurse -Path "./skills/ai-project-brownfield" -Destination "$projetoDestino/.agents/skills/"
+```
 
-## Uso
+## Uso no Claude Code
 
-Abra o terminal **na raiz do projeto existente**.
+Abra o terminal na pasta do **projeto existente** e inicie:
 
-### Claude Code
+```bash
+claude
+```
+
+Na sessão, use:
 
 ```text
 /ai-project-brownfield
 ```
 
-ou
+Você também pode dar contexto:
 
 ```text
 /ai-project-brownfield Analise este projeto existente e prepare sua base AI-native.
 ```
 
-### Codex
+Se o sistema for composto por mais de um repositório, informe-os:
+
+```text
+/ai-project-brownfield O sistema é composto por este repositório e por ../web e ../worker.
+```
+
+## Uso no Codex
+
+Abra o terminal na pasta do **projeto existente** e inicie:
+
+```bash
+codex
+```
+
+Na sessão, use:
 
 ```text
 $ai-project-brownfield
 ```
 
-ou em linguagem natural:
+Ou solicite explicitamente:
 
 ```text
 Use a skill ai-project-brownfield para analisar este projeto existente e preparar sua base AI-native.
 ```
 
-### Outras LLMs
+Se a skill não aparecer, confira se existe `SKILL.md` dentro da pasta instalada e abra uma nova sessão. A cópia em `~/.claude/skills/` se destina ao Claude Code local; a instalação em Cowork e sessões cloud utiliza mecanismos próprios da plataforma.
 
-Forneça o conteúdo de `skills/ai-project-brownfield/SKILL.md` como instrução e dê acesso
-de leitura à pasta da skill (referências, templates e scripts).
+## Como será a execução?
 
-### Multirepo
+1. A LLM cria uma branch de suporte seguindo a convenção do projeto e roda o inventário.
+2. Descobre stack, arquitetura, regras de negócio, testes, pipelines, ambientes, produção e GitFlow — sem perguntar o que o repositório já responde.
+3. Apresenta um **Discovery Brief** de uma página com achados, conflitos, principais gaps e até sete perguntas realmente bloqueantes. Responda o que souber; o restante vira decisão em aberto.
+4. A LLM gera o Vault, o estado atual, a próxima ação, o workflow, o GitFlow documentado, o roadmap reconciliado, os adapters e o handoff.
+5. Os scripts verificam que nenhum código de produto foi alterado e que o Vault está válido.
+6. Abra a pasta `vault/` como Vault no Obsidian e navegue por `00_HOME/START_HERE.md`.
+7. Revise `CURRENT_STATE.md`, `OPEN_DECISIONS.md` e `NEXT_ACTION.md` antes de continuar o desenvolvimento.
 
-Informe os repositórios que compõem o sistema:
+Push, abertura de PR/MR e merge da branch de suporte dependem da sua autorização. A skill não começa a implementar a próxima ação ao terminar.
+
+## Continuar o desenvolvimento e trocar de LLM
+
+Depois do bootstrap a skill não é mais necessária no dia a dia. Em qualquer ferramenta, peça:
 
 ```text
-/ai-project-brownfield O sistema é composto por este repo e por ../web e ../worker.
+Leia AGENTS.md e execute a NEXT_ACTION.
 ```
 
-## O que é gerado no projeto alvo
+Para trocar de Claude para Codex (ou o contrário), peça à LLM atual para atualizar o handoff e, na nova ferramenta:
 
 ```text
-AGENTS.md                    adapter neutro: ordem de leitura e regras inegociáveis
-CLAUDE.md                    @AGENTS.md (+ específicos do Claude, se houver)
-.ai/
-├── HANDOFF.md               handoff curto (≤ 60 linhas)
-├── BOOTSTRAP_STATUS.md      progresso (permite retomar em outra sessão/LLM)
-├── discovery/INVENTORY.md   saída do discover.sh
-├── agents/                  somente os papéis úteis ao projeto
-└── contracts/CONTRACTS.md
-vault/
-├── 00_HOME/        START_HERE*, PROJECT_MAP*
-├── 01_PRODUCT/     PRODUCT_VISION, PERSONAS, USER_JOURNEYS
-├── 02_BUSINESS/    BUSINESS_RULES*, INVARIANTS, STATES_AND_TRANSITIONS, AUTHORIZATION_MATRIX, GLOSSARY
-├── 03_ARCHITECTURE/ SYSTEM_ARCHITECTURE*, DATA_MODEL, SECURITY, INFRASTRUCTURE, INTEGRATIONS, ADR/
-├── 04_DEVELOPMENT/ AI_WORKFLOW*, GITFLOW*, TEST_STRATEGY*, DEVELOPMENT_WORKFLOW, QUALITY_GATES, TOOLING
-├── 05_STATE/       CURRENT_STATE*, NEXT_ACTION*, GAP_ANALYSIS*, TECHNICAL_DEBT*, KNOWN_RISKS*, OPEN_DECISIONS*
-├── 06_OPERATIONS/  ENVIRONMENTS, DEPLOYMENT, FEATURE_FLAGS, RUNBOOK
-└── 11_ROADMAP/     DEVELOPMENT_PLAN*
+Leia AGENTS.md e continue a partir de .ai/HANDOFF.md.
 ```
 
-`*` = núcleo, sempre criado. Os demais só existem se houver conteúdo com evidência — a skill
-não cria arquivo vazio para cumprir template. Docs pré-existentes são **referenciadas**, não
-copiadas. Veja o exemplo completo em `skills/ai-project-brownfield/examples/`.
+## Atualizar a instalação
 
-Abra `vault/` no Obsidian (“Open folder as vault”) e comece por `00_HOME/START_HERE.md`, ou
-leia direto no editor/GitHub — os links são Markdown relativo padrão.
-
-## Brownfield discovery e evidence model
-
-| Confiança | Quando |
-|---|---|
-| `CONFIRMED` | duas fontes independentes concordam, fonte autoritativa direta ou confirmação humana |
-| `INFERRED` | uma fonte indireta (nome, padrão, só código, só doc) |
-| `CONFLICTING` | fontes divergem — ambas registradas, sem escolha silenciosa |
-| `UNKNOWN` | sem evidência suficiente |
-
-A skill **não pergunta** “qual banco?” se há config PostgreSQL, nem “qual framework?” se o
-manifest responde, nem “como é o GitFlow?” antes de inspecionar branches, tags e pipelines.
-Pergunta somente quando a evidência falta ou conflita **e** o impacto é relevante.
-
-Regras de negócio recebem ID estável (`BR-<DOMÍNIO>-NNN`) e classificação
-`CONFIRMED_RULE / INFERRED_RULE / CONFLICTING_RULE / UNKNOWN_RULE`, com flags
-`INVARIANT`, `SECURITY_RELEVANT` e `FINANCIAL_RELEVANT`.
-
-## Workflow, risk model e gates
-
-Depois do bootstrap, todo trabalho segue `vault/04_DEVELOPMENT/AI_WORKFLOW.md`:
-
-| Etapa | O que acontece |
-|---|---|
-| **PLAN** | entender objetivo, consultar regras e arquitetura, classificar risco, definir abordagem, perguntar só o crítico |
-| **BUILD** | implementar, testar, corrigir problemas locais, atualizar docs — sem interromper por microcorreções |
-| **VERIFY** | testes, build, lint, contratos, migrations, segurança, regressão, review — proporcional ao risco |
-| **SHIP** | commit, push, PR/MR, merge, tag, deploy, atualizar estado — conforme permissões |
-
-| Risco | Exemplos |
-|---|---|
-| `RISK_LOW` | copy, estilo, UI simples, docs, filtro, refactor local |
-| `RISK_MEDIUM` | endpoint, CRUD, regra de negócio limitada, integração interna, autorização comum |
-| `RISK_HIGH` | auth, billing, pagamento, migration, segurança, concorrência, infra, produção, flags críticas |
-
-Gates: **GATE 1 — PLAN APPROVAL**, **GATE 2 — FEATURE READY**, **GATE 3 — PROMOTION**.
-Fora deles a LLM só para em: mudança de regra de negócio, decisão de produto, mudança
-arquitetural significativa, migration destrutiva/risco de perda de dados, segurança
-CRITICAL/HIGH, mutação de produção/deploy, conflito canônico não resolvido ou falta de
-credenciais/permissões. Não para por erro de compilação, ajuste de teste, lint, formatter,
-problema óbvio de harness, refactor trivial ou correção de documentação.
-
-## GitFlow existente
-
-A skill **não impõe** GitFlow. Descobre branches, branches protegidas, fluxo de merge,
-convenção de commits, release, tags, PR/MR e gates a partir do histórico, das pipelines e
-da documentação, e documenta em `GITFLOW.md` com fonte e confiança. Mudanças só como
-recomendação com razão concreta.
-
-## Multi-LLM e handoff
-
-O workflow pertence ao projeto; LLMs são executores intercambiáveis.
-
-- `AGENTS.md` é a porta de entrada neutra (lida pelo Codex e por várias ferramentas).
-- `CLAUDE.md` importa `@AGENTS.md` — nenhuma regra duplicada por fornecedor.
-- Ordem de leitura de um novo executor: `AGENTS.md` → `.ai/HANDOFF.md` → `START_HERE` →
-  `CURRENT_STATE` → `NEXT_ACTION` → `BUSINESS_RULES` (domínios tocados) → `AI_WORKFLOW`.
-- `.ai/HANDOFF.md` tem campos fixos (`PROJECT`, `CURRENT_STATE`, `CURRENT_BRANCH`,
-  `CURRENT_GOAL`, `LAST_COMPLETED_ACTION`, `NEXT_ACTION`, `BLOCKERS`, `RISKS`,
-  `HUMAN_DECISIONS_PENDING`) e no máximo 60 linhas.
-
-Trocar Claude → Codex: atualize o handoff e, no Codex, peça “Leia AGENTS.md e continue a
-partir de .ai/HANDOFF.md”. Codex → Claude: o mesmo pedido no Claude Code.
-
-## Agentes
-
-Papéis disponíveis: Orchestrator, Explorer, Domain Analyst, Software Architect, Security,
-QA, DevOps, Reviewer e Implementer (especializável em backend, frontend, database…). O
-bootstrap copia para o projeto **somente** os úteis. O Orchestrator delega apenas quando há
-ganho real (trabalho independente, isolamento, modelo mais barato), com profundidade 1 e
-contratos estruturados (`ROLE … EXPECTED_OUTPUT` / `STATUS … RECOMMENDATION`). Sem suporte a
-subagentes, a mesma LLM executa os papéis em sequência.
-
-## Segurança
-
-- **DO NOT MODIFY PRODUCT CODE**: durante o bootstrap só `vault/`, `docs/`, `.ai/`,
-  `.claude/`, `.agents/`, `.codex/`, `agents/`, `skills/`, `AGENTS.md` e `CLAUDE.md` podem
-  mudar. `check-scope.sh` reprova qualquer outro arquivo, inclusive pipelines e README do produto.
-- **PRODUCTION_SAFETY_MODE** ativa automaticamente com qualquer sinal de produção — e
-  permanece `ON` quando não é possível descartá-la: no deploy, no migration, no data
-  mutation, no secret rotation, no flag change, no infra mutation, no CI/CD change.
-- Build e testes só com autorização (podem baixar dependências ou tocar bancos).
-- Nenhum segredo no Vault: `discover.sh` nunca imprime valores e remove credenciais de URLs;
-  `validate-vault.sh` reprova padrões de segredo.
-- Push, PR/MR e merge do próprio bootstrap são GATE 3.
-
-## Scripts
+Na cópia deste repositório:
 
 ```bash
-S=~/.claude/skills/ai-project-brownfield/scripts     # ou ~/.agents/skills/...
-
-$S/discover.sh . ../outro-repo > .ai/discovery/INVENTORY.md   # inventário somente leitura
-$S/check-scope.sh .                                          # nenhum arquivo de produto alterado?
-$S/validate-vault.sh .                                       # Vault completo, curto e sem segredos?
+git pull --ff-only
 ```
 
-Os scripts também são úteis isoladamente — por exemplo, `discover.sh` como inventário rápido
-de um repositório desconhecido.
+Depois copie novamente a pasta da skill para o destino escolhido. Preserve eventuais personalizações antes de substituir arquivos.
+
+## Desinstalar
+
+Remova apenas a pasta `ai-project-brownfield` do local em que a instalou. Isso remove a skill, mas mantém os artefatos já gerados nos projetos.
 
 ## Testes da skill
 
@@ -322,40 +212,23 @@ de um repositório desconhecido.
 tests/run.sh
 ```
 
-Valida estrutura, os três scripts em 11 fixtures (projeto simples, multirepo, GitFlow,
-produção, docs conflitantes, regras, arquitetura hexagonal, pouca documentação, CI/CD, feature
-flags, dívida técnica, setup de IA existente) e o exemplo completo. Os 15 cenários de
-comportamento da LLM estão em `tests/scenarios/`. Detalhes em `docs/TESTING.md`.
+Valida a estrutura da skill e os scripts em projetos de exemplo (projeto simples, multirepo, GitFlow existente, produção ativa, documentação conflitante, regras de negócio, arquitetura existente, pouca documentação, CI/CD, feature flags, dívida técnica e projeto já preparado). Os cenários de comportamento da LLM, incluindo trocas Claude ↔ Codex, estão em `tests/scenarios/`.
 
-## Exemplos
+## Limites e próximos passos
 
-- `skills/ai-project-brownfield/examples/discovery-brief.md` — o checkpoint com perguntas.
-- `skills/ai-project-brownfield/examples/final-report.md` — o relatório `CONTINUATION READY`.
-- `skills/ai-project-brownfield/examples/bootstrapped-project/` — resultado completo em um
-  projeto fictício multirepo em produção.
+- O resultado deve ser conferido em um projeto piloto; os testes validam scripts e formato, mas não comprovam a execução completa em todas as ferramentas.
+- Os cenários de comportamento em `tests/scenarios/` ainda precisam ser executados no Claude Code e no Codex e registrados em `docs/EVAL_LOG.md`.
+- O inventário detecta sinais por nomes de arquivos e palavras-chave; a classificação final é da LLM, com evidência.
+- Regras de proteção de branch e configurações da plataforma Git só são lidas se houver MCP ou CLI autorizado.
+- Em bases muito grandes a cobertura é deliberadamente parcial: domínios críticos primeiro, o restante entra no roadmap.
 
-## Limitações
-
-- Os scripts detectam **sinais** por nomes de arquivo e palavras-chave; podem gerar falsos
-  positivos/negativos. A classificação final é da LLM, com evidência.
-- O comportamento da LLM foi especificado e tem cenários de avaliação, mas a primeira rodada
-  de avaliação em Claude Code e Codex ainda precisa ser executada e registrada
-  (`docs/EVAL_LOG.md`).
-- Regras de proteção de branch, issues e ambientes da plataforma Git só são lidas se houver
-  MCP/CLI autorizado; caso contrário ficam `INFERRED`/`UNKNOWN`.
-- Em bases muito grandes a cobertura é deliberadamente parcial (domínios críticos primeiro);
-  o restante vira item de roadmap.
-- Formatos de arquivos específicos de fornecedor (subagentes, regras) mudam; confira a
-  documentação vigente antes de criar adapters além de `AGENTS.md`/`CLAUDE.md`.
-- Os scripts requerem bash; em Windows sem WSL/Git Bash, as verificações são manuais.
-
-## Documentação
-
-- `docs/REFERENCE_ANALYSIS.md` — o que foi aproveitado e descartado da skill de referência.
-- `docs/DESIGN.md` — estrutura e decisões de design.
-- `docs/TESTING.md` — testes e avaliação.
-- [Skills no Claude Code](https://code.claude.com/docs/en/skills) · [Skills no Codex](https://learn.chatgpt.com/docs/build-skills)
+Mais detalhes em `docs/REFERENCE_ANALYSIS.md`, `docs/DESIGN.md` e `docs/TESTING.md`.
 
 ## Licença
 
 MIT — ver `LICENSE`.
+
+## Documentação oficial
+
+- [Skills no Codex](https://learn.chatgpt.com/docs/build-skills)
+- [Skills no Claude Code](https://code.claude.com/docs/en/skills)
