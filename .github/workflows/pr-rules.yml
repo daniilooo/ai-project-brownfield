@@ -12,7 +12,7 @@ jobs:
     name: branch-flow
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: GitFlow (main ← develop ← branches de trabalho)
         env:
           SRC: ${{ github.head_ref }}
@@ -23,7 +23,7 @@ jobs:
     name: conventional-commits
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Título do PR
