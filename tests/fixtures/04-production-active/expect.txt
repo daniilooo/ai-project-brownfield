@@ -1,0 +1,16 @@
++ PRODUCTION_SAFETY_MODE: RECOMMENDED_ON
++ arquivo de produção: helm/values-prod.yaml
++ arquivo de produção: src/main/resources/application-prod.yml
++ pipeline de deploy/release: .github/workflows/deploy-prod.yml
++ pipeline referencia produção: .github/workflows/deploy-prod.yml
++ tags de release: 2
++ changelog: CHANGELOG.md
++ README menciona produção: README.md
++ `.env`
++ `origin https://git.example.com/acme/api.git`
++ `prod (
++ `dev (
+- DUMMY_SECRET_VALUE_123
+- tok3nNotReal
+- deploybot
++ `pipeline: production (1)`
