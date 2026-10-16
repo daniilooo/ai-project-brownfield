@@ -303,7 +303,9 @@ inventory_repo() {
 
   # ------------------------------------------------------------ Docs
   echo "### Documentação"
-  echo "- README: $(paths_i '^README[^/]*$' | paste -sd ' ' - | sed 's/^$/NÃO ENCONTRADO/')"
+  # Sem depender de "paste" emitir linha para entrada vazia (BSD/macOS não emite).
+  local readmes; readmes="$(paths_i '^README[^/]*$' | paste -sd ' ' -)"
+  echo "- README: ${readmes:-NÃO ENCONTRADO}"
   echo "- Arquivos de documentação: $(count "$DOCS")"
   echo "- ADRs / decisões:"
   paths_i '(^|/)(adr|adrs|decisions|architecture-decisions)/' | print_list
