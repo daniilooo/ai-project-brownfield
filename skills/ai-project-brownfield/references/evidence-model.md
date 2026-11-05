@@ -11,6 +11,12 @@ CONFIDENCE  CONFIRMED | INFERRED | CONFLICTING | UNKNOWN
 Em tabelas do Vault use as colunas `Source | Evidence | Confidence`. Em texto corrido use o
 sufixo `[CONFIRMED — pom.xml:42]`.
 
+**Citações verificáveis.** Escreva arquivos entre crases, com caminho a partir da raiz do
+repositório (`src/billing/domain/invoice.py:18`, `orderly-web/.env.example` em multirepo) ou
+com basename único. Assim `scripts/check-evidence.sh` confirma que a fonte existe e, depois,
+detecta drift (`STALE`) quando o arquivo muda. `validate-vault.sh` exige `CONFIDENCE` válido
+e reprova `CONFIRMED` com `SOURCE` vazio.
+
 ## Classificação
 
 | Valor | Critério |
