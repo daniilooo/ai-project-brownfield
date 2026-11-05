@@ -6,7 +6,7 @@
 #   KEEP_TMP=1 tests/run.sh mantém os repositórios montados em tests/.tmp/ (para cenários manuais)
 #
 # Requisitos: bash, git (>= 2.31), coreutils. Sem rede, sem dependências externas.
-# Cobre a parte determinística (estrutura da skill, discover, check-scope, validate-vault).
+# Cobre a parte determinística (estrutura da skill, discover, check-scope, validate-vault, check-evidence).
 # O comportamento da LLM é avaliado pelos cenários manuais em tests/scenarios/.
 
 set -u
@@ -226,6 +226,13 @@ sed -i.bak '/^LAST_COMPLETED_ACTION:/d' "$V/.ai/HANDOFF.md"
 "$SCRIPTS/validate-vault.sh" --partial "$TMP/vv-missing" > "$TMP/vv6.out"
 grep -q 'núcleo ausente' "$TMP/vv6.out" && ko "--partial não deveria exigir núcleo" || ok "--partial não exige arquivos núcleo"
 
+V="$TMP/vv-conf"; mkdir -p "$V"; cp -R "$SKILL/examples/bootstrapped-project/." "$V/"
+printf '\n| Item | Source | Confidence |\n|---|---|---|\n| cache | `pom.xml:77` | PROVAVEL |\n| fila | — | CONFIRMED |\n\nBanco: Postgres · Confidence: TALVEZ\n' >> "$V/vault/03_ARCHITECTURE/SYSTEM_ARCHITECTURE.md"
+"$SCRIPTS/validate-vault.sh" "$V" > "$TMP/vv7.out"; rc=$?
+[ "$rc" -eq 1 ] && grep -q 'valor inválido: PROVAVEL' "$TMP/vv7.out" && grep -q 'CONFIRMED sem SOURCE' "$TMP/vv7.out" \
+  && grep -q 'valor inválido: TALVEZ' "$TMP/vv7.out" \
+  && ok "CONFIDENCE inválido e CONFIRMED sem SOURCE → FAIL" || { ko "evidence model não validado"; [ "$VERBOSE" -eq 1 ] && cat "$TMP/vv7.out"; }
+
 # =========================================================================== E
 section "E. Multi-LLM e handoff (cenários 13 e 14)"
 
@@ -287,6 +294,62 @@ for f in "$ROOT"/.github/rulesets/*.json; do
     python3 -m json.tool "$f" >/dev/null && ok "ruleset JSON válido: $(basename "$f")" || ko "ruleset inválido: $f"
   fi
 done
+
+# =========================================================================== G
+section "G. check-evidence.sh (evidências e drift — modo REFRESH)"
+
+R="$TMP/evidence"
+build_repo "$FIX/01-simple-monolith/repo" "$R"
+mkdir -p "$R/vault/02_BUSINESS" "$R/.ai"
+cat > "$R/vault/02_BUSINESS/BUSINESS_RULES.md" <<'MD'
+# BUSINESS RULES
+
+| ID | RULE | SOURCE | CONFIDENCE |
+|---|---|---|---|
+| BR-001 | Carrinho calcula total | `src/main/java/com/example/shop/CartService.java:1` | INFERRED_RULE |
+| BR-002 | Coberto por teste | `CartServiceTest.java`, `pom.xml` | CONFIRMED_RULE |
+
+Ver [mapa](BUSINESS_RULES.md). Ignorados: `feature/x-1`, `src/main/java/.../shop`, `io.x:y`, `orders.csv-export`.
+MD
+(cd "$R" && git add -A && git commit -q -m "docs(ai): vault")
+BASE_SHA="$(cd "$R" && git rev-parse HEAD)"
+before="$(snapshot "$R")"
+"$SCRIPTS/check-evidence.sh" "$R" > "$TMP/ev1.out"; rc=$?
+[ "$rc" -eq 0 ] && grep -q 'RESULT: OK — 4 referência' "$TMP/ev1.out" && grep -q 'sem baseline' "$TMP/ev1.out" \
+  && ok "citações válidas (caminho, basename, link) → OK; sem baseline avisa" || { ko "citações válidas deveriam passar (rc=$rc)"; cat "$TMP/ev1.out"; }
+[ "$before" = "$(snapshot "$R")" ] && ok "check-evidence.sh é somente leitura" || ko "check-evidence.sh alterou o repositório"
+
+printf '| BR-003 | x | `src/Gone.java`, `README.md:900` | INFERRED |\n\n[quebrado](../nao-existe.md)\n' >> "$R/vault/02_BUSINESS/BUSINESS_RULES.md"
+"$SCRIPTS/check-evidence.sh" "$R" > "$TMP/ev2.out"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '^BROKEN .*src/Gone.java' "$TMP/ev2.out" && grep -q '^LINE .*README.md:900' "$TMP/ev2.out" \
+  && grep -q '^LINK .*nao-existe.md' "$TMP/ev2.out" && ok "arquivo inexistente, linha fora do arquivo e link quebrado → FAIL" \
+  || { ko "evidência quebrada não detectada"; cat "$TMP/ev2.out"; }
+(cd "$R" && git checkout -q -- vault)
+
+echo "// mudança" >> "$R/src/main/java/com/example/shop/CartService.java"
+echo "x: 1" >> "$R/src/main/resources/application.yml"
+(cd "$R" && git add -A && git commit -q -m "feat: evolve cart")
+"$SCRIPTS/check-evidence.sh" --since "$BASE_SHA" "$R" > "$TMP/ev3.out"; rc=$?
+[ "$rc" -eq 0 ] && grep -q '^STALE .*CartService.java .*BUSINESS_RULES.md:5' "$TMP/ev3.out" \
+  && grep -q '^UNCOVERED src/main/resources/application.yml' "$TMP/ev3.out" && grep -q '1 commit(s) desde' "$TMP/ev3.out" \
+  && ok "drift: arquivo citado alterado → STALE; alterado e não citado → UNCOVERED" || { ko "drift não detectado"; cat "$TMP/ev3.out"; }
+"$SCRIPTS/check-evidence.sh" --strict --since "$BASE_SHA" "$R" > /dev/null; rc=$?
+[ "$rc" -eq 1 ] && ok "--strict reprova STALE" || ko "--strict deveria reprovar STALE"
+printf 'BASELINE_COMMIT: %s\n' "$BASE_SHA" > "$R/.ai/BOOTSTRAP_STATUS.md"
+"$SCRIPTS/check-evidence.sh" "$R" > "$TMP/ev4.out"
+grep -q '^STALE ' "$TMP/ev4.out" && ok "baseline lida de .ai/BOOTSTRAP_STATUS.md" || ko "BASELINE_COMMIT não foi usado"
+printf 'BASELINE_COMMIT: %s\n' "$(cd "$R" && git rev-parse HEAD)" > "$R/.ai/BOOTSTRAP_STATUS.md"
+"$SCRIPTS/check-evidence.sh" "$R" > "$TMP/ev5.out"
+grep -q '^STALE ' "$TMP/ev5.out" && ko "baseline atualizada não deveria ter STALE" || ok "após refresh (baseline = HEAD) não há STALE"
+
+M="$TMP/evidence-multi"
+build_repo "$FIX/02-multirepo/repos/api" "$M/api"; build_repo "$FIX/02-multirepo/repos/web" "$M/web"
+mkdir -p "$M/api/vault/00_HOME"
+printf '| Repo | Source | Confidence |\n|---|---|---|\n| api | `src/server.js`, `api/package.json` | CONFIRMED |\n| web | `web/src/App.tsx:1`, `web/.env.example` | CONFIRMED |\n' > "$M/api/vault/00_HOME/PROJECT_MAP.md"
+"$SCRIPTS/check-evidence.sh" "$M/api" "$M/web" > "$TMP/ev6.out"; rc=$?
+[ "$rc" -eq 0 ] && grep -q '4 referência' "$TMP/ev6.out" && ok "multirepo: prefixo <repo>/ resolve na raiz certa" || { ko "multirepo falhou (rc=$rc)"; cat "$TMP/ev6.out"; }
+"$SCRIPTS/check-evidence.sh" "$M/api" > "$TMP/ev7.out"; rc=$?
+[ "$rc" -eq 1 ] && grep -q 'BROKEN .*web/src/App.tsx' "$TMP/ev7.out" && ok "multirepo sem a outra raiz → BROKEN" || ko "raiz ausente não detectada"
 
 # =========================================================================== resumo
 echo

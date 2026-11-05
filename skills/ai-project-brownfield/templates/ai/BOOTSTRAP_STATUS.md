@@ -3,8 +3,9 @@
 <!-- TEMPLATE: permite retomar o bootstrap em outra sessão/LLM. Atualize ao fim de cada fase. -->
 
 STARTED: {{data}} · EXECUTOR: {{ferramenta}} · BRANCH: {{branch de suporte}}
-DEPTH: {{LEAN | STANDARD | DEEP}} · PRODUCTION_SAFETY_MODE: {{ON | OFF}} · MODE: {{NEW | CONSOLIDATE}}
+DEPTH: {{LEAN | STANDARD | DEEP}} · PRODUCTION_SAFETY_MODE: {{ON | OFF}} · MODE: {{NEW | CONSOLIDATE | REFRESH}}
 REPOSITORIES: {{lista de raízes}}
+BASELINE_COMMIT: {{sha (1 repo) ou <repo>@<sha> separados por espaço}}
 
 | Fase | Status | Notas |
 |---|---|---|
@@ -30,3 +31,8 @@ REPOSITORIES: {{lista de raízes}}
 ## Alterações pendentes do time encontradas no preflight (não tocar)
 
 - {{nenhuma | arquivos}}
+
+## Refresh log
+
+| Data | Executor | Baseline anterior → nova | Commits cobertos | BROKEN/STALE/UNCOVERED | Notas |
+|---|---|---|---|---|---|

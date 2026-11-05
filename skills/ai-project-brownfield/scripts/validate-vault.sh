@@ -12,7 +12,10 @@
 #   - nenhum padrão óbvio de segredo;
 #   - CURRENT_STATE.md (≤ 120 linhas) e NEXT_ACTION.md (≤ 80 linhas) com todas as seções;
 #   - .ai/HANDOFF.md (se existir) ≤ 60 linhas e com todos os campos;
-#   - AGENTS.md aponta para o Vault; CLAUDE.md (se existir) é fino e referencia AGENTS.md.
+#   - AGENTS.md aponta para o Vault; CLAUDE.md (se existir) é fino e referencia AGENTS.md;
+#   - evidence model: em tabelas com coluna Confidence, cada linha usa CONFIRMED | INFERRED |
+#     CONFLICTING | UNKNOWN (ou *_RULE); CONFIRMED exige Source preenchido; "Confidence: X" inline idem.
+#     (Existência dos arquivos citados e drift: check-evidence.sh.)
 #
 # Saída: 0 = OK; 1 = erros; 2 = erro de uso.
 
@@ -24,7 +27,7 @@ ROOT="."
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --partial) PARTIAL=1; shift ;;
-    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
     *) ROOT="$1"; shift ;;
   esac
 done
@@ -145,6 +148,43 @@ if [ -f CLAUDE.md ]; then
   grep -q 'AGENTS.md' CLAUDE.md || err "CLAUDE.md não importa/referencia AGENTS.md (evite regras duplicadas)"
   [ "$(lines CLAUDE.md)" -le "$MAX_CLAUDE" ] || warn "CLAUDE.md tem $(lines CLAUDE.md) linhas: adapter deve ser fino"
 fi
+
+# Evidence model: valores de CONFIDENCE válidos e CONFIRMED sempre com SOURCE
+find vault -type f -name '*.md' | sort | while IFS= read -r f; do
+  awk -v F="$f" '
+    function trim(x) { gsub(/[`*]/, "", x); sub(/^[[:space:]]+/, "", x); sub(/[[:space:]]+$/, "", x); return x }
+    function valid(x) { return x ~ /^(CONFIRMED|INFERRED|CONFLICTING|UNKNOWN)(_RULE)?([^A-Z_]|$)/ }
+    { l[NR] = $0 }
+    END {
+      ci = 0; si = 0; intable = 0
+      for (i = 1; i <= NR; i++) {
+        x = l[i]
+        if (x !~ /^[[:space:]]*\|/) { intable = 0; ci = 0; si = 0 }
+        else if (!intable && i < NR && l[i + 1] ~ /^[|: -]+$/) {
+          intable = 1; ci = 0; si = 0; n = split(x, h, "|")
+          for (k = 1; k <= n; k++) {
+            c = tolower(trim(h[k]))
+            if (c ~ /^(confidence|confiança|confianca)$/) ci = k
+            if (c ~ /^(source|sources|fonte|fontes)$/) si = k
+          }
+          continue
+        } else if (intable && ci && x !~ /^[|: -]+$/) {
+          split(x, cell, "|"); v = trim(cell[ci])
+          if (v == "") print "CONFIDENCE " F ":" i " vazio (use CONFIRMED|INFERRED|CONFLICTING|UNKNOWN)"
+          else if (!valid(v)) print "CONFIDENCE " F ":" i " valor inválido: " substr(v, 1, 40)
+          else if (si && v ~ /^CONFIRMED/) { s = trim(cell[si]); if (s == "" || s ~ /^(—|-|–|n\/a|N\/A|none|NONE)$/) print "CONFIDENCE " F ":" i " CONFIRMED sem SOURCE" }
+        }
+        y = x
+        while (match(y, /[Cc]onfidence:[[:space:]]*[`*]*[A-Za-z_]+/)) {
+          v = substr(y, RSTART, RLENGTH); sub(/^[Cc]onfidence:[[:space:]]*[`*]*/, "", v)
+          if (!valid(v)) print "CONFIDENCE " F ":" i " valor inválido: " v
+          y = substr(y, RSTART + RLENGTH)
+        }
+      }
+    }' "$f"
+done > "${TMPDIR:-/tmp}/bf-conf.$$"
+while IFS= read -r line; do err "$line"; done < "${TMPDIR:-/tmp}/bf-conf.$$"
+rm -f "${TMPDIR:-/tmp}/bf-conf.$$"
 
 if grep -RqE 'CONFIRMED|INFERRED|CONFLICTING|UNKNOWN' vault 2>/dev/null; then :; else
   warn "nenhum marcador de confiança (CONFIRMED/INFERRED/CONFLICTING/UNKNOWN) no Vault"
