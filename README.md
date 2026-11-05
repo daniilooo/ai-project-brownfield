@@ -45,7 +45,8 @@ O arquivo `skills/ai-project-brownfield/SKILL.md` contém o fluxo principal. Os 
 |---|---|
 | `discover.sh` | inventário somente leitura de um ou mais repositórios; nunca imprime valores de configuração |
 | `check-scope.sh` | confirma que só material de suporte foi alterado (nenhum código de produto) |
-| `validate-vault.sh` | confirma que o Vault está completo, curto e sem segredos |
+| `validate-vault.sh` | confirma que o Vault está completo, curto, sem segredos e com `CONFIDENCE` válido (todo `CONFIRMED` com fonte) |
+| `check-evidence.sh` | confirma que os arquivos e linhas citados no Vault existem e aponta o drift desde a baseline (`STALE`, `UNCOVERED`) |
 
 A mesma pasta é utilizada no Claude Code e no Codex. A skill fornece instruções; suporte a subagentes, seleção de modelos, MCPs e execução entre fornecedores depende das capacidades e permissões reais do ambiente. Instalar esta skill não instala as LLMs nem conecta contas.
 
@@ -192,6 +193,14 @@ Para trocar de Claude para Codex (ou o contrário), peça à LLM atual para atua
 Leia AGENTS.md e continue a partir de .ai/HANDOFF.md.
 ```
 
+## Manter o Vault atualizado (modo REFRESH)
+
+O bootstrap registra a `BASELINE_COMMIT` em `.ai/BOOTSTRAP_STATUS.md`. Depois de semanas de desenvolvimento, rode a skill de novo no mesmo projeto: ela detecta que o bootstrap já foi concluído e entra no modo **REFRESH** — mede o drift com `check-evidence.sh`, reverifica só as afirmações cujas fontes mudaram, atualiza estado, gaps e roadmap, e avança a baseline. Para conferir o drift sem a LLM:
+
+```bash
+skills/ai-project-brownfield/scripts/check-evidence.sh /caminho/do/projeto
+```
+
 ## Atualizar a instalação
 
 Na cópia deste repositório:
@@ -221,6 +230,7 @@ Valida a estrutura da skill e os scripts em projetos de exemplo (projeto simples
 - O inventário detecta sinais por nomes de arquivos e palavras-chave; a classificação final é da LLM, com evidência.
 - Regras de proteção de branch e configurações da plataforma Git só são lidas se houver MCP ou CLI autorizado.
 - Em bases muito grandes a cobertura é deliberadamente parcial: domínios críticos primeiro, o restante entra no roadmap.
+- `check-evidence.sh` verifica citações entre crases com caminho completo ou basename único; globs, `...` e nomes ambíguos não são verificados, e um arquivo `STALE` indica que a fonte mudou, não que a afirmação ficou errada.
 
 Mais detalhes em `docs/REFERENCE_ANALYSIS.md`, `docs/DESIGN.md` e `docs/TESTING.md`.
 

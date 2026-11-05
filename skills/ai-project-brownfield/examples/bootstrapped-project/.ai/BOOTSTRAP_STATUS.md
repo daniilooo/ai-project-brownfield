@@ -3,6 +3,7 @@
 STARTED: 2026-10-10 · EXECUTOR: Claude Code · BRANCH: docs/ai-brownfield-bootstrap
 DEPTH: STANDARD · PRODUCTION_SAFETY_MODE: ON · MODE: NEW
 REPOSITORIES: orderly-api (Vault aqui), orderly-web
+BASELINE_COMMIT: orderly-api@3f9c2a1 orderly-web@8b41d07
 
 | Fase | Status | Notas |
 |---|---|---|
@@ -19,3 +20,9 @@ REPOSITORIES: orderly-api (Vault aqui), orderly-web
 | 9 Multi-LLM + agents + handoff | DONE | agentes: orchestrator, explorer, domain-analyst, architect, qa, reviewer, backend-implementer |
 | 10 Verify | DONE | check-scope OK; validate-vault OK |
 | 11 Report | DONE | |
+
+## Refresh log
+
+| Data | Executor | Baseline anterior → nova | Commits cobertos | BROKEN/STALE/UNCOVERED | Notas |
+|---|---|---|---|---|---|
+| — | — | — | — | — | nenhum refresh ainda |

@@ -4,7 +4,8 @@
 
 ```text
 EXISTING PROJECT
- → PREFLIGHT (inventário, profundidade, produção, branch de suporte, retomada)
+ → PREFLIGHT (modo NEW/CONSOLIDATE/REFRESH, inventário, profundidade, produção, baseline,
+              branch de suporte, retomada)
  → DISCOVERY (projeto, regras, arquitetura)          — somente leitura
  → GAP ANALYSIS
  → DISCOVERY BRIEF (≤ 7 perguntas bloqueantes; não bloqueia o resto)
@@ -14,6 +15,9 @@ EXISTING PROJECT
  → MULTI-LLM (adapters, agentes, handoff)
  → VERIFY (check-scope, validate-vault, review)
  → CONTINUATION READY (para; não implementa)
+
+REFRESH (Vault já existente): DRIFT (check-evidence) → REVERIFY → UPDATE STATE → VERIFY
+ → CONTINUATION READY (baseline avançada)
 ```
 
 ## Estrutura
@@ -26,7 +30,8 @@ skills/ai-project-brownfield/
 ├── agents/             papéis canônicos + CONTRACTS.md + openai.yaml (metadados Codex)
 ├── templates/          root/ (AGENTS.md, CLAUDE.md), ai/ (HANDOFF, BOOTSTRAP_STATUS),
 │                       adapters/ (subagente Claude), vault/ (núcleo + condicionais)
-├── scripts/            discover.sh, check-scope.sh, validate-vault.sh (bash puro, sem deps)
+├── scripts/            discover.sh, check-scope.sh, validate-vault.sh, check-evidence.sh
+│                       (bash puro, sem deps)
 └── examples/           projeto fictício completo após o bootstrap + brief + relatório
 ```
 
@@ -46,3 +51,5 @@ skills/ai-project-brownfield/
 | D10 | Arquivos condicionais só com conteúdo | Evita Vault-cemitério; `validate-vault.sh` reprova arquivos só-template. |
 | D11 | Gates: 3 + lista fechada de paradas | Reduz interrupções por microcorreções sem abrir mão de controle humano no que importa. |
 | D12 | Commit local permitido; push/PR = GATE 3 | O bootstrap é reversível localmente; publicar é decisão humana. |
+| D13 | Modo `REFRESH` com `BASELINE_COMMIT` | Vault que não acompanha o código vira contexto errado; ressincronizar pelo diff é mais barato e mais seguro que refazer o bootstrap. |
+| D14 | Citações verificáveis por script (`check-evidence.sh`) | `SOURCE` que aponta para arquivo inexistente é evidência falsa; o mesmo índice de citações permite detectar drift. Rebaixar confiança de fonte alterada é seguro; promover continua exigindo evidência. |

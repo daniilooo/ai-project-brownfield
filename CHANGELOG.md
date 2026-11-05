@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ## [Unreleased]
 
+### Added
+- Modo `REFRESH` (`references/refresh.md`): ressincroniza um Vault existente pelo drift desde a `BASELINE_COMMIT`, reverificando só as afirmações afetadas.
+- `scripts/check-evidence.sh`: verifica se arquivos, linhas e links citados no Vault existem e aponta `STALE`/`UNCOVERED` desde a baseline (`--since`, `--strict`, multirepo).
+- `validate-vault.sh` valida o evidence model: `CONFIDENCE` com valor permitido e `CONFIRMED` sempre com `SOURCE`.
+- `BASELINE_COMMIT` e `Refresh log` em `.ai/BOOTSTRAP_STATUS.md`; cenário 16 (refresh) e suíte G em `tests/run.sh`.
+
+### Changed
+- `description` da skill cobre refresh e explicita quando **não** usar (features, bugs, dúvidas pontuais).
+- `SKILL.md`: tabela de modos `NEW`/`CONSOLIDATE`/`REFRESH`, critério de saída nas fases 1–4, `check-evidence.sh` na FASE 10 e `HOW_TO_CONTINUE` reescrito.
+
 ### Changed
 - GitFlow: `hotfix/*` pode abrir PR direto para `main` (correção urgente), com sincronização obrigatória de volta para `develop`.
 

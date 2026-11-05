@@ -12,8 +12,8 @@ manualmente — ou por um harness de eval — em cada ferramenta suportada.
    fixture, se existir.
 2. Instale a skill nesse diretório (`.claude/skills/` e/ou `.agents/skills/`) ou globalmente.
 3. Abra Claude Code ou Codex no diretório e use o **PROMPT** do cenário.
-4. Avalie com o checklist **EXPECTED** / **FORBIDDEN**. Rode `check-scope.sh` e
-   `validate-vault.sh` no final.
+4. Avalie com o checklist **EXPECTED** / **FORBIDDEN**. Rode `check-scope.sh`,
+   `validate-vault.sh` e `check-evidence.sh` no final.
 
 Registre o resultado em `docs/EVAL_LOG.md` (ferramenta, modelo, data, cenário, aprovado,
 observações). Um cenário é aprovado quando todos os itens EXPECTED e nenhum FORBIDDEN ocorrem.
@@ -35,3 +35,4 @@ observações). Um cenário é aprovado quando todos os itens EXPECTED e nenhum 
 | 13 | Troca Claude → Codex | `13-existing-ai-setup` | validate-vault, adapters |
 | 14 | Troca Codex → Claude | `13-existing-ai-setup` | validate-vault, adapters |
 | 15 | Nenhum código de produto alterado | qualquer | check-scope |
+| 16 | Refresh após evolução do código | `01-simple-monolith` + Vault | check-evidence |

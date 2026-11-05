@@ -1,13 +1,16 @@
 ---
 name: ai-project-brownfield
 description: >
-  Prepara projetos de software EXISTENTES (brownfield) para desenvolvimento AI-native.
-  Descobre stack, arquitetura, regras de negócio, GitFlow, CI/CD, ambientes e sinais de
-  produção a partir de evidências; consolida um Vault como fonte única da verdade; faz
-  gap analysis; alinha workflow, gates, roadmap e handoff multi-LLM (Claude Code, Codex e
-  outras) sem alterar código de produto. Use ao assumir, retomar ou documentar um projeto
-  já existente, ao preparar um repositório legado para agentes de IA ou ao consolidar
-  contexto espalhado em chats. Não use para criar projeto novo a partir de uma ideia.
+  Prepara projetos de software EXISTENTES (brownfield) para desenvolvimento AI-native e
+  mantém essa base atualizada. Descobre stack, arquitetura, regras de negócio, GitFlow,
+  CI/CD, ambientes e sinais de produção a partir de evidências; consolida um Vault como
+  fonte única da verdade; faz gap analysis; alinha workflow, gates, roadmap e handoff
+  multi-LLM (Claude Code, Codex e outras) sem alterar código de produto. Use ao assumir,
+  retomar ou documentar um projeto existente, ao preparar um repositório legado para
+  agentes de IA, ao consolidar contexto espalhado (chats, docs, AGENTS.md/CLAUDE.md) ou
+  para ressincronizar (refresh) um Vault desatualizado em relação ao código. Não use para
+  criar projeto novo a partir de uma ideia, implementar features, corrigir bugs ou
+  responder uma dúvida pontual sobre o código.
 ---
 
 # AI PROJECT BROWNFIELD
@@ -22,6 +25,12 @@ EXISTING PROJECT → DISCOVERY → CONSOLIDATION → GAP ANALYSIS
 
 Esta execução **não implementa features**. Ela termina em `CONTINUATION READY` e devolve o
 controle ao engenheiro.
+
+| Modo | Quando (decidido na FASE 0) | Fluxo |
+|---|---|---|
+| `NEW` | sem setup de IA prévio | fases 0–11 |
+| `CONSOLIDATE` | já há `AGENTS.md`/`CLAUDE.md`/docs de IA/Vault de outra origem | fases 0–11, mesclando |
+| `REFRESH` | Vault criado por esta skill (`.ai/BOOTSTRAP_STATUS.md` com FASE 11 `DONE`) e código evoluiu | `references/refresh.md` (R0–R5) |
 
 Caminhos relativos neste arquivo (`references/`, `templates/`, `scripts/`, `agents/`,
 `examples/`) são relativos à pasta desta skill. Leia cada referência **somente quando chegar
@@ -119,7 +128,8 @@ outra LLM.
 
 ### FASE 0 — PREFLIGHT
 
-1. Se `.ai/BOOTSTRAP_STATUS.md` existir, **retome** de onde parou.
+1. Se `.ai/BOOTSTRAP_STATUS.md` existir: com fases pendentes, **retome** de onde parou;
+   com a FASE 11 `DONE`, entre em modo **REFRESH** e siga `references/refresh.md`.
 2. Identifique a raiz e a topologia. Antes de perguntar se há outros repositórios, procure
    referências em README, compose, pipelines, submódulos e manifests. Nunca converta
    multirepo em monorepo.
@@ -127,6 +137,8 @@ outra LLM.
    as commite e registre-as.
 4. Detecte setup de IA prévio (`vault/`, `AGENTS.md`, `CLAUDE.md`, `.ai/`, `.claude/`,
    `.agents/`, `.cursor*`, `copilot-instructions`). Se existir: modo **CONSOLIDATE** (mesclar).
+   Registre o `MODE` e a `BASELINE_COMMIT` (`git rev-parse HEAD` de cada repositório) em
+   `.ai/BOOTSTRAP_STATUS.md` — é a referência para detectar drift no futuro.
 5. Rode `scripts/discover.sh <raiz> [outras raízes...]` e salve a saída em
    `.ai/discovery/INVENTORY.md`. A saída é evidência bruta, não conclusão.
 6. Escolha a profundidade (§4) e o estado do `PRODUCTION_SAFETY_MODE` (§3).
@@ -138,20 +150,25 @@ outra LLM.
 
 Siga `references/discovery.md` e `references/evidence-model.md`. Use o inventário para
 direcionar a leitura; abra arquivos para confirmar, não para varrer.
+Saída: stack, topologia, comandos de build/teste, ambientes e sinais de produção, cada um com
+`SOURCE` e `CONFIDENCE`.
 
 ### FASE 2 — BUSINESS RULE DISCOVERY
 
 Siga `references/business-rules.md`. Regras vêm de docs, testes, domínio, validators, enums,
 state machines, constraints, migrations, contratos de API e códigos de erro.
+Saída: regras dos domínios críticos com ID, `SOURCE` e classificação `*_RULE`.
 
 ### FASE 3 — ARCHITECTURE DISCOVERY
 
 Siga `references/architecture.md`. Descreva a arquitetura **como ela é**, não como deveria ser.
+Saída: estilo, módulos e dependências, integrações e regras arquiteturais observadas (com violações).
 
 ### FASE 4 — GAP ANALYSIS
 
 Siga `references/gap-analysis.md`. Compare existe × implementado × documentado × testado ×
 operado; classifique gaps e dívida sem transformar tudo em blocker.
+Saída: gaps classificados e priorizados; só os de severidade real viram blocker.
 
 ### CHECKPOINT — DISCOVERY BRIEF
 
@@ -204,8 +221,12 @@ Siga `references/multi-llm.md` e `agents/README.md`:
 
 1. `scripts/check-scope.sh <raiz>` — nenhum arquivo de produto alterado.
 2. `scripts/validate-vault.sh <raiz>` — núcleo presente, sem placeholders, sem segredos,
-   `CURRENT_STATE`/`NEXT_ACTION`/`HANDOFF` curtos e completos.
-3. Revisão com o checklist de `agents/reviewer.md` (modo bootstrap): toda afirmação
+   `CURRENT_STATE`/`NEXT_ACTION`/`HANDOFF` curtos e completos, `CONFIDENCE` válido e todo
+   `CONFIRMED` com `SOURCE`.
+3. `scripts/check-evidence.sh <raiz> [outras raízes...]` — todo arquivo/linha citado existe
+   (`BROKEN`/`LINE`/`LINK` = 0). Cite caminhos completos ou únicos (`OrderService.java:142`
+   só funciona se o basename for único); globs e `...` são ignorados.
+4. Revisão com o checklist de `agents/reviewer.md` (modo bootstrap): toda afirmação
    relevante tem fonte; `INFERRED` não virou `CONFIRMED`; conflitos estão visíveis.
 
 Corrija o que falhar sem consultar o humano quando a correção estiver no escopo de suporte.
@@ -223,8 +244,10 @@ FILES_CREATED / FILES_UPDATED
 KEY_FINDINGS · CONFLICTS · TOP_GAPS
 OPEN_DECISIONS (humanas)
 NEXT_ACTION (de NEXT_ACTION.md)
-HOW_TO_CONTINUE: Claude Code → /ai-project-brownfield não é mais necessário; abra o projeto
-e peça "leia AGENTS.md e execute a NEXT_ACTION". Codex → idem.
+HOW_TO_CONTINUE: a skill não é mais necessária para trabalhar no projeto.
+  Claude Code → "Continue a partir de .ai/HANDOFF.md e execute a NEXT_ACTION" (CLAUDE.md já importa AGENTS.md).
+  Codex/outras → "Leia AGENTS.md, continue a partir de .ai/HANDOFF.md e execute a NEXT_ACTION".
+  Vault desatualizado depois de semanas de código → rode esta skill de novo (modo REFRESH).
 ```
 
 **Não comece a implementar a NEXT_ACTION.** O engenheiro decide quando começar.
@@ -277,7 +300,8 @@ avise o engenheiro no DISCOVERY BRIEF.
 ## INICIE AGORA
 
 1. Não implemente código de produto.
-2. Execute a FASE 0 (PREFLIGHT) e rode o inventário.
+2. Execute a FASE 0 (PREFLIGHT): decida o modo (`NEW`, `CONSOLIDATE` ou `REFRESH`) e rode
+   o inventário (ou, em REFRESH, `check-evidence.sh`).
 3. Prossiga pelas fases; pare apenas no DISCOVERY BRIEF para perguntas bloqueantes e nos
    gates definidos.
 4. Termine em `CONTINUATION READY` com o relatório da FASE 11.
